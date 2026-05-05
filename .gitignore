@@ -1,0 +1,152 @@
+# ============================================================
+#  Dependencies
+# ============================================================
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ============================================================
+#  Build outputs
+# ============================================================
+dist/
+dist-ssr/
+build/
+out/
+
+# ============================================================
+#  Environment & secrets  ← NEVER commit these
+# ============================================================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+.env.*.local
+
+# ============================================================
+#  Firebase
+# ============================================================
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+firestore-debug.*.log
+dataconnect-debug.log
+dataconnect-debug.*.log
+ui-debug.log
+pubsub-debug.log
+database-debug.log
+hosting-debug.log
+functions/node_modules/
+functions/lib/
+.firebaserc.local
+
+# ============================================================
+#  TypeScript
+# ============================================================
+*.tsbuildinfo
+
+# ============================================================
+#  Vite
+# ============================================================
+.vite/
+
+# ============================================================
+#  Testing
+# ============================================================
+# Vitest coverage
+coverage/
+.nyc_output/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/blob-report/
+
+# Cucumber
+cucumber-report.html
+cucumber-report.json
+
+# ============================================================
+#  Performance & reports  (generated artefacts)
+# ============================================================
+reports/
+
+# ============================================================
+#  Documentation (generated)
+# ============================================================
+docs/api/
+storybook-static/
+debug-storybook.log
+
+# ============================================================
+#  Firebase credentials (NEVER commit)
+# ============================================================
+server/serviceAccountKey.json
+
+# ============================================================
+#  Logs
+# ============================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================================
+#  OS artefacts
+# ============================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+
+# ============================================================
+#  Editors & IDEs
+# ============================================================
+# VSCode
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# JetBrains (WebStorm, IntelliJ, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim / Emacs
+*.swp
+*.swo
+*.swn
+*~
+\#*\#
+.\#*
+
+# ============================================================
+#  Miscellaneous
+# ============================================================
+*.local
+*.pem
+.cache/
+.temp/
+.tmp/
+lint-before.txt
+lint-report.txt

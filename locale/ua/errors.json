@@ -1,0 +1,46 @@
+{
+  "errors": {
+    "AUTH_001": "Invalid email or password. Please check your credentials.",
+    "AUTH_002": "No account found with this email address.",
+    "AUTH_003": "This email is already registered. Sign in or reset your password.",
+    "AUTH_004": "Password is too weak. Use at least 6 characters.",
+    "AUTH_005": "Too many login attempts. Please wait a few minutes and try again.",
+    "AUTH_006": "Your session has expired. Please sign in again.",
+    "AUTH_007": "Steam login failed. Please try again later.",
+    "CART_001": "Item not found in cart.",
+    "PAY_001": "Stripe payment failed. Please check your card details.",
+    "PAY_002": "PayPal payment failed. Please try again.",
+    "PAY_003": "Payment was cancelled.",
+    "DATA_001": "Failed to load data. Please check your connection.",
+    "DATA_002": "Failed to save changes. Please try again.",
+    "DATA_003": "Requested data not found.",
+    "NET_001": "No internet connection. Please check your network.",
+    "NET_002": "Request timed out. Please try again later.",
+    "GEN_001": "An unexpected error occurred. Please refresh the page.",
+    "GEN_002": "The form contains invalid data. Please check the fields."
+  },
+  "errorPage": {
+    "title": "Something went wrong",
+    "subtitle": "Try refreshing the page or going back to the home page.",
+    "actions": {
+      "tryAgain": "Try again",
+      "goHome": "Go home",
+      "report": "Download report"
+    },
+    "supportCode": "Support code",
+    "steps": {
+      "title": "What you can do:",
+      "refresh": "Refresh the page (F5 or Ctrl+R)",
+      "checkNetwork": "Check your internet connection",
+      "relogin": "Try signing in again",
+      "contact": "If the issue persists, contact support"
+    }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "This page doesn't exist or has been moved.",
+    "back": "Go back",
+    "home": "Home",
+    "store": "Browse games"
+  }
+}
