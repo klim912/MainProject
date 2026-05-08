@@ -45,6 +45,7 @@ admin.initializeApp({
 
 const friendsRouter = require('./friends');
 const userDataRouter = require('./userData');
+const reviewsRouter = require('./reviews');
 
 app.use(session({
   secret: 'your_session_secret',
@@ -57,6 +58,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use('/friends', friendsRouter);
 app.use('/user', userDataRouter);
+app.use('/reviews', reviewsRouter);
 
 const STEAM_API_KEY = 'F0577A7618F5812DF4FF0E4C0A92C2AE';
 
