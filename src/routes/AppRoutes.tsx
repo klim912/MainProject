@@ -1,3 +1,6 @@
+// ЗМІНИ:
+// - Додано імпорт FriendProfile (рядок ~9)
+// - Додано маршрут /profile/:uid (рядок ~19)
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
 import Store from "../pages/Store";
@@ -19,6 +22,7 @@ import Profile from "../pages/Profile";
 import SteamCallback from "../pages/SteamCallback";
 import ResetPassword from "../pages/ResetPassword";
 import Settings from "../pages/Settings";
+import FriendProfile from "../pages/FriendProfile";
 
 const AppRoutes = () => (
   <Routes>
@@ -39,6 +43,7 @@ const AppRoutes = () => (
     <Route path="/verify-email" element={<VerifyEmail />} />
     <Route path="/auth/steam/callback" element={<SteamCallback />} />
     <Route path="/profile" element={<Profile />} />
+    <Route path="/profile/:uid" element={<FriendProfile />} />
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/settings" element={<Settings />} />
     <Route path="*" element={<NotFound />} />

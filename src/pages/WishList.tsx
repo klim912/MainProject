@@ -1,3 +1,7 @@
+// ЗМІНИ:
+// - Використовується dealID замість назви для видалення та як ключ
+// - У handleBuy передається gameID: dealID (очікується кошиком)
+// - Посилання на гру через game.dealID
 import { useEffect } from "react";
 import { useWishlist } from "../components/WishlistContext";
 import { useCart } from "../components/CartContext";
@@ -6,7 +10,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 
-function Wishlist() {
+function WishList() {
   const wishlistContext = useWishlist();
   const cartContext = useCart();
   const { t, i18n } = useTranslation();
@@ -29,31 +33,22 @@ function Wishlist() {
   const { wishlist, removeFromWishlist } = wishlistContext;
   const { addToCart } = cartContext;
 
-  interface BuyGame {
-    title: string;
-    thumb: string;
-    salePrice: string;
-    gameID: string;
-  }
-
-  const handleBuy = (game: BuyGame) => {
+  const handleBuy = (game: { title: string; thumb: string; salePrice: string; dealID: string }) => {
     addToCart({
       title: game.title,
       thumb: game.thumb,
       salePrice: game.salePrice,
-      gameID: game.gameID,
+      gameID: game.dealID, // передаємо dealID як gameID для кошика
     });
-    removeFromWishlist(game.title);
+    removeFromWishlist(game.dealID);
   };
 
   return (
     <div className="min-h-screen bg-black font-mono text-white py-12 px-4 mt-10">
       <div className="max-w-6xl mx-auto mt-16">
-        <h2
-          className="text-3xl md:text-4xl font-bold text-lime-400 mb-10 text-center tracking-wider relative
-            before:content-[''] before:absolute before:inset-x-0 before:bottom-0 before:h-0.5 before:bg-lime-500/50
-            before:transform before:transition-transform before:duration-300 hover:before:scale-x-110"
-        >
+        <h2 className="text-3xl md:text-4xl font-bold text-lime-400 mb-10 text-center tracking-wider relative
+          before:content-[''] before:absolute before:inset-x-0 before:bottom-0 before:h-0.5 before:bg-lime-500/50
+          before:transform before:transition-transform before:duration-300 hover:before:scale-x-110">
           {t("wishlist_title")}
         </h2>
 
@@ -65,13 +60,13 @@ function Wishlist() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {wishlist.map((game) => (
               <div
-                key={game.title}
+                key={game.dealID}
                 className="relative bg-neutral-950/90 border border-lime-500/30 rounded-md overflow-hidden transition-all duration-500 hover:border-lime-500/50 hover:scale-105 group"
               >
                 <div className="absolute inset-0 -z-10 bg-lime-500/10 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
 
                 <Link
-                  to={`/game/${game.gameID}`}
+                  to={`/game/${game.dealID}`}
                   className="text-base md:text-lg font-semibold text-lime-400 text-center p-4 tracking-wide line-clamp-2 h-16 mb-4 block"
                 >
                   {game.title || t("unknown_game")}
@@ -100,7 +95,7 @@ function Wishlist() {
                       {t("buy_now")}
                     </button>
                     <button
-                      onClick={() => removeFromWishlist(game.title)}
+                      onClick={() => removeFromWishlist(game.dealID)}
                       className="bg-neutral-900/50 border border-lime-500/50 text-lime-400 p-2 rounded-sm
                         hover:bg-red-500/20 hover:border-red-500/50 transition-all duration-300 transform hover:scale-110"
                     >
@@ -117,4 +112,4 @@ function Wishlist() {
   );
 }
 
-export default Wishlist;
+export default WishList;

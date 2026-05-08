@@ -1,11 +1,12 @@
 // ЗМІНИ:
-// - Додано useEffect для очищення inputValue при зміні шляху, якщо це не /store (рядки ~27-31)
+// - Додано лічильник вхідних запитів друзів біля Friends (рядки ~11, ~25, ~217)
 import { useState, useEffect } from "react";
 import { Search, X, Menu, ChevronDown, ShoppingCart, Heart } from "react-feather";
 import { NavLink, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useCart } from "./CartContext";
 import { useWishlist } from "./WishlistContext";
 import { useAuth } from "../context/AuthContext";
+import { useFriends } from "./FriendsContext";
 import { useTranslation } from "react-i18next";
 
 function Header() {
@@ -21,10 +22,12 @@ function Header() {
   const { cartItems } = useCart();
   const { wishlist } = useWishlist();
   const { currentUser, userProfile, logout } = useAuth();
+  const { incomingRequests } = useFriends();
+  
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const wishlistCount = wishlist.length;
+  const friendRequestCount = incomingRequests.length;
 
-  // Очищення пошукового поля, коли користувач йде зі сторінки магазину
   useEffect(() => {
     if (location.pathname !== "/store") {
       setInputValue("");
@@ -78,15 +81,11 @@ function Header() {
   };
 
   const handleLogout = async () => {
-    console.warn("Stage 33: Header logout initiated");
     try {
       await logout();
       toggleMenu();
       navigate("/");
-      console.warn("Stage 34: Header logout successful");
-    } catch (err: any) {
-      console.error("Stage 35: Header logout error:", err.message);
-    }
+    } catch (_) {}
   };
 
   return (
@@ -185,28 +184,21 @@ function Header() {
         </div>
 
         <div className="hidden lg:flex items-center gap-8">
-          <NavLink
-            to="/store"
-            className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-          >
+          <NavLink to="/store" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
             {t("store")}
           </NavLink>
-          <NavLink
-            to="/library"
-            className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-          >
+          <NavLink to="/library" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
             {t("library")}
           </NavLink>
-          <NavLink
-            to="/friends"
-            className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-          >
+          <NavLink to="/friends" className="relative text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
             {t("friends")}
+            {friendRequestCount > 0 && (
+              <span className="absolute -top-2 -right-4 bg-lime-500 text-black text-xs rounded-full px-2 py-0.5">
+                {friendRequestCount}
+              </span>
+            )}
           </NavLink>
-          <NavLink
-            to="/sales"
-            className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-          >
+          <NavLink to="/sales" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
             {t("sales")}
           </NavLink>
         </div>
@@ -218,70 +210,22 @@ function Header() {
 
       {isNavOpen && (
         <div className="fixed inset-0 bg-neutral-950/95 text-white z-30 flex flex-col items-center justify-center space-y-8 backdrop-blur-md">
-          <button
-            className="absolute top-5 right-5 text-lime-400"
-            onClick={toggleNav}
-          >
-            <X size={30} />
-          </button>
-          <NavLink
-            to="/store"
-            className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-            onClick={toggleNav}
-          >
-            {t("store")}
-          </NavLink>
-          <NavLink
-            to="/library"
-            className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-            onClick={toggleNav}
-          >
-            {t("library")}
-          </NavLink>
-          <NavLink
-            to="/friends"
-            className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-            onClick={toggleNav}
-          >
-            {t("friends")}
-          </NavLink>
-          <NavLink
-            to="/sales"
-            className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300"
-            onClick={toggleNav}
-          >
-            {t("sales")}
-          </NavLink>
+          <button className="absolute top-5 right-5 text-lime-400" onClick={toggleNav}><X size={30} /></button>
+          <NavLink to="/store" className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300" onClick={toggleNav}>{t("store")}</NavLink>
+          <NavLink to="/library" className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300" onClick={toggleNav}>{t("library")}</NavLink>
+          <NavLink to="/friends" className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300" onClick={toggleNav}>{t("friends")}</NavLink>
+          <NavLink to="/sales" className="text-2xl text-lime-400 uppercase tracking-wide hover:text-lime-500 transition-colors duration-300" onClick={toggleNav}>{t("sales")}</NavLink>
         </div>
       )}
 
       <div className="flex justify-end gap-4 px-6 py-3 border-t border-lime-500/20">
-        <NavLink
-          to="/wishlist"
-          className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide
-            hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105"
-        >
-          <Heart size={16} />
-          {t("wishlist")}
-          {wishlistCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">
-              {wishlistCount}
-            </span>
-          )}
+        <NavLink to="/wishlist" className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105">
+          <Heart size={16} /> {t("wishlist")}
+          {wishlistCount > 0 && <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">{wishlistCount}</span>}
         </NavLink>
-        <NavLink
-          to="/cart"
-          className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide
-            hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105"
-          onClick={handleCartClick}
-        >
-          <ShoppingCart size={16} />
-          {t("cart")}
-          {cartCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">
-              {cartCount}
-            </span>
-          )}
+        <NavLink to="/cart" className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105">
+          <ShoppingCart size={16} /> {t("cart")}
+          {cartCount > 0 && <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">{cartCount}</span>}
         </NavLink>
       </div>
     </header>
