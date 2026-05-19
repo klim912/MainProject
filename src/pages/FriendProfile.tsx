@@ -1,12 +1,12 @@
 // ЗМІНИ:
-// - Завантаження бібліотеки/вішліст через сервер
-// - Кнопка "Назад" з іконкою, кнопка чату відкриває ChatWindow
+// - Замінено текстовий індикатор завантаження на компонент Loader
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
 import { useFriends } from "../components/FriendsContext";
 import ChatWindow from "../components/ChatWindow";
+import Loader from "../components/Loader";
 import { Monitor, Heart, ArrowLeft, MessageCircle } from "react-feather";
 
 function FriendProfile() {
@@ -39,24 +39,50 @@ function FriendProfile() {
       .finally(() => setLoading(false));
   }, [uid]);
 
-  if (loading) return <div className="mt-[200px] text-center text-lime-400">{t("loading")}</div>;
-  if (!profile) return <div className="mt-[200px] text-center text-red-500">{t("user_not_found")}</div>;
+  if (loading) {
+    return (
+      <div className="mt-[193px] flex justify-center items-center bg-black min-h-screen">
+        <Loader text={t("loading")} />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="mt-[193px] text-center text-red-500 bg-black min-h-screen">
+        {t("user_not_found")}
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-[200px] px-4 bg-black min-h-screen text-white font-mono">
+    <div className="mt-[193px] px-4 bg-black min-h-screen text-white font-mono">
       <div className="max-w-4xl mx-auto py-8">
-        <Link to="/friends" className="inline-flex items-center gap-2 bg-neutral-900/50 border border-lime-500/30 text-lime-400 px-4 py-2 rounded-sm hover:bg-lime-500/20 transition-all mb-6 cursor-pointer">
+        <Link
+          to="/friends"
+          className="inline-flex items-center gap-2 bg-neutral-900/50 border border-lime-500/30 text-lime-400 px-4 py-2 rounded-sm hover:bg-lime-500/20 transition-all mb-6 cursor-pointer"
+        >
           <ArrowLeft size={16} /> {t("back_to_friends")}
         </Link>
 
         <div className="bg-neutral-950 border border-lime-500/30 rounded-sm p-6 mb-8">
           <div className="flex items-center gap-6">
-            <img src={profile.avatar || "../src/assets/avatar.png"} alt="" className="size-20 rounded-full border border-lime-500/50" />
+            <img
+              src={profile.avatar || "../src/assets/avatar.png"}
+              alt=""
+              className="size-20 rounded-full border border-lime-500/50"
+            />
             <div>
               <h1 className="text-2xl text-lime-400">{profile.displayName}</h1>
-              <p className={`text-sm mt-1 ${profile.online ? 'text-green-400' : 'text-gray-500'}`}>{profile.online ? t("online") : t("offline")}</p>
-              <button onClick={() => setChatOpen(true)} className="mt-3 flex items-center gap-2 bg-lime-500/10 border border-lime-500 text-lime-400 px-4 py-2 rounded-sm hover:bg-lime-500 hover:text-black transition-all cursor-pointer">
-                <MessageCircle size={16} /> {t("send_message", "Send Message")}
+              <p className={`text-sm mt-1 ${profile.online ? "text-green-400" : "text-gray-500"}`}>
+                {profile.online ? t("online") : t("offline")}
+              </p>
+              <button
+                onClick={() => setChatOpen(true)}
+                className="mt-3 flex items-center gap-2 bg-lime-500/10 border border-lime-500 text-lime-400 px-4 py-2 rounded-sm hover:bg-lime-500 hover:text-black transition-all cursor-pointer"
+              >
+                <MessageCircle size={16} />
+                {t("send_message", "Send Message")}
               </button>
             </div>
           </div>
@@ -64,15 +90,29 @@ function FriendProfile() {
 
         {/* Бібліотека */}
         <div className="mb-8">
-          <h2 className="text-xl text-lime-400 uppercase tracking-wide mb-4 flex items-center gap-2"><Monitor size={20} /> {t("library")}</h2>
-          {library.length === 0 ? <p className="text-gray-500">{t("no_games")}</p> : (
+          <h2 className="text-xl text-lime-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <Monitor size={20} /> {t("library")}
+          </h2>
+          {library.length === 0 ? (
+            <p className="text-gray-500">{t("no_games")}</p>
+          ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {library.map(game => (
-                <Link key={game.dealID} to={`/game/${game.dealID}`} className="bg-neutral-950 border border-lime-500/30 rounded-md overflow-hidden transition-all duration-300 hover:border-lime-500/50 hover:scale-[1.03] group">
+              {library.map((game) => (
+                <Link
+                  key={game.dealID}
+                  to={`/game/${game.dealID}`}
+                  className="bg-neutral-950 border border-lime-500/30 rounded-md overflow-hidden transition-all duration-300 hover:border-lime-500/50 hover:scale-[1.03] group"
+                >
                   <div className="h-32 bg-black flex items-center justify-center p-2">
-                    <img src={game.thumb || "https://via.placeholder.com/100?text=No+Image"} alt={game.title} className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:brightness-110" />
+                    <img
+                      src={game.thumb || "https://via.placeholder.com/100?text=No+Image"}
+                      alt={game.title}
+                      className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:brightness-110"
+                    />
                   </div>
-                  <div className="p-2"><h3 className="text-xs text-lime-300 truncate">{game.title}</h3></div>
+                  <div className="p-2">
+                    <h3 className="text-xs text-lime-300 truncate">{game.title}</h3>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -81,15 +121,29 @@ function FriendProfile() {
 
         {/* Вішліст */}
         <div>
-          <h2 className="text-xl text-lime-400 uppercase tracking-wide mb-4 flex items-center gap-2"><Heart size={20} /> {t("wishlist")}</h2>
-          {wishlist.length === 0 ? <p className="text-gray-500">{t("no_games")}</p> : (
+          <h2 className="text-xl text-lime-400 uppercase tracking-wide mb-4 flex items-center gap-2">
+            <Heart size={20} /> {t("wishlist")}
+          </h2>
+          {wishlist.length === 0 ? (
+            <p className="text-gray-500">{t("no_games")}</p>
+          ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {wishlist.map(game => (
-                <Link key={game.dealID} to={`/game/${game.dealID}`} className="bg-neutral-950 border border-lime-500/30 rounded-md overflow-hidden transition-all duration-300 hover:border-lime-500/50 hover:scale-[1.03] group">
+              {wishlist.map((game) => (
+                <Link
+                  key={game.dealID}
+                  to={`/game/${game.dealID}`}
+                  className="bg-neutral-950 border border-lime-500/30 rounded-md overflow-hidden transition-all duration-300 hover:border-lime-500/50 hover:scale-[1.03] group"
+                >
                   <div className="h-32 bg-black flex items-center justify-center p-2">
-                    <img src={game.thumb || "https://via.placeholder.com/100?text=No+Image"} alt={game.title} className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:brightness-110" />
+                    <img
+                      src={game.thumb || "https://via.placeholder.com/100?text=No+Image"}
+                      alt={game.title}
+                      className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:brightness-110"
+                    />
                   </div>
-                  <div className="p-2"><h3 className="text-xs text-lime-300 truncate">{game.title}</h3></div>
+                  <div className="p-2">
+                    <h3 className="text-xs text-lime-300 truncate">{game.title}</h3>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -98,7 +152,11 @@ function FriendProfile() {
       </div>
 
       {chatOpen && uid && profile && (
-        <ChatWindow friendUid={uid} friendName={profile.displayName} onClose={() => setChatOpen(false)} />
+        <ChatWindow
+          friendUid={uid}
+          friendName={profile.displayName}
+          onClose={() => setChatOpen(false)}
+        />
       )}
     </div>
   );

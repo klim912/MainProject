@@ -1,8 +1,8 @@
-// ЗМІНИ:
-// - Об'єднання серверних та локальних даних
-// - Виправлене видалення (dealID), синхронізація з сервером
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLibrary, LibraryItem } from './LibraryContext';
+import { useToast } from './ToastContext';
+import { useTranslation } from 'react-i18next';
 
 interface Game {
   title: string;
@@ -22,57 +22,51 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { currentUser } = useAuth();
-  const [wishlist, setWishlist] = useState<Game[]>(() => {
-    const saved = localStorage.getItem("wishlist");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { library } = useLibrary();
+  const { toast } = useToast();
+  const { t } = useTranslation();
+
+  const [wishlist, setWishlist] = useState<Game[]>([]);
 
   useEffect(() => {
     if (!currentUser) return;
     fetch(`http://localhost:3000/user/wishlist/${currentUser.uid}`)
       .then(res => res.json())
-      .then(serverList => {
-        if (!Array.isArray(serverList)) return;
-        setWishlist(prev => {
-          const merged = [...prev];
-          serverList.forEach((serverGame: Game) => {
-            if (!merged.some(g => g.dealID === serverGame.dealID)) {
-              merged.push(serverGame);
-            }
-          });
-          return merged;
-        });
-      })
-      .catch(console.error);
-  }, [currentUser]);
-
-  const syncWishlist = useCallback(async (items: Game[]) => {
-    if (!currentUser) return;
-    try {
-      await fetch('http://localhost:3000/user/wishlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: currentUser.uid, items })
-      });
-    } catch (err) {
-      console.error('Sync wishlist failed:', err);
-    }
+      .then(data => { if (Array.isArray(data)) setWishlist(data); })
+      .catch(() => {});
   }, [currentUser]);
 
   useEffect(() => {
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
-    syncWishlist(wishlist);
-  }, [wishlist, syncWishlist]);
+  }, [wishlist]);
 
-  const addToWishlist = (game: Game) => {
+  const addToWishlist = async (game: Game) => {
+    if (library.some((libItem: LibraryItem) => libItem.dealID === game.dealID)) {
+      toast(t('already_in_library'));
+      return;
+    }
     setWishlist(prev => {
       if (prev.find(item => item.dealID === game.dealID)) return prev;
       return [...prev, game];
     });
+    if (currentUser) {
+      fetch('http://localhost:3000/user/wishlist/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: currentUser.uid, game })
+      }).catch(() => {});
+    }
   };
 
-  const removeFromWishlist = (dealID: string) => {
+  const removeFromWishlist = async (dealID: string) => {
     setWishlist(prev => prev.filter(item => item.dealID !== dealID));
+    if (currentUser) {
+      fetch('http://localhost:3000/user/wishlist/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: currentUser.uid, dealID })
+      }).catch(() => {});
+    }
   };
 
   const isGameWishlisted = (dealID: string) => {

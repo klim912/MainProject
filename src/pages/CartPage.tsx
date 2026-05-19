@@ -1,145 +1,100 @@
-import { useEffect } from "react";
+// ЗМІНИ:
+// - Декодування gameID перед використанням у посиланні (рядки 23–24)
+// - Кнопка видалення викликає removeFromCart з item.gameID (оригінальним)
+// - Ключ елемента – item.gameID
 import { useCart } from "../components/CartContext";
-import { Trash2 } from "react-feather";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useAuth } from "../context/AuthContext";
+import { X, ShoppingCart } from "react-feather";
 
 function CartPage() {
-  const { cartItems, setCartItems, removeFromCart } = useCart();
-  const { t, i18n } = useTranslation();
-  const { userSettings } = useAuth();
+  const { cartItems, removeFromCart } = useCart();
+  const { t } = useTranslation();
 
-  useEffect(() => {
-    if (userSettings?.language) {
-      i18n.changeLanguage(userSettings.language);
-    }
-  }, [userSettings, i18n]);
-
-  const updateQuantity = (title: string, quantity: number) => {
-    if (quantity < 1) return;
-    setCartItems(
-      cartItems.map((item) =>
-        item.title === title ? { ...item, quantity } : item
-      )
+  if (cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-black mt-[193px] pt-8 text-center text-white font-mono">
+        <p>{t("cart_empty")}</p>
+        <Link
+          to="/store"
+          className="text-lime-400 underline mt-4 inline-block"
+        >
+          {t("store")}
+        </Link>
+      </div>
     );
-  };
+  }
 
-  const calculateTotal = () => {
-    return cartItems
-      .reduce(
-        (total, item) => total + Number(item.salePrice) * item.quantity,
-        0
-      )
-      .toFixed(2);
-  };
+  const total = cartItems
+    .reduce((sum, item) => sum + parseFloat(item.salePrice) * item.quantity, 0)
+    .toFixed(2);
 
   return (
-    <div className="min-h-screen bg-black font-mono text-white py-12 px-4 mt-10">
-      <div className="max-w-6xl mx-auto mt-16">
-        <h2
-          className="text-3xl md:text-4xl font-bold text-lime-400 mb-10 text-center tracking-wider relative
-            before:content-[''] before:absolute before:inset-x-0 before:bottom-0 before:h-0.5 before:bg-lime-500/50
-            before:transform before:transition-transform before:duration-300 hover:before:scale-x-110"
-        >
+    <div className="min-h-screen bg-black mt-[193px] px-4 font-mono text-white">
+      <div className="max-w-3xl mx-auto py-8">
+        <h1 className="text-3xl font-bold text-lime-400 uppercase tracking-wider mb-8">
+          <ShoppingCart className="inline mr-3" size={28} />
           {t("cart_title")}
-        </h2>
+        </h1>
 
-        {cartItems.length === 0 ? (
-          <p className="text-center text-lg text-neutral-500 tracking-wide">
-            {t("cart_empty")}
-          </p>
-        ) : (
-          <>
-            <div className="bg-neutral-950/90 border border-lime-500/30 rounded-md overflow-hidden backdrop-blur-md">
-              <div className="overflow-x-auto">
-                <table className="min-w-full table-auto">
-                  <thead className="bg-neutral-900/50 border-b border-lime-500/20">
-                    <tr>
-                      <th className="py-3 px-4 text-left text-lime-400 text-sm tracking-wide">
-                        {t("cart_image")}
-                      </th>
-                      <th className="py-3 px-4 text-left text-lime-400 text-sm tracking-wide">
-                        {t("cart_game")}
-                      </th>
-                      <th className="py-3 px-4 text-left text-lime-400 text-sm tracking-wide">
-                        {t("cart_quantity")}
-                      </th>
-                      <th className="py-3 px-4 text-left text-lime-400 text-sm tracking-wide">
-                        {t("cart_price")}
-                      </th>
-                      <th className="py-3 px-4 text-left text-lime-400 text-sm tracking-wide">
-                        {t("cart_total_price")}
-                      </th>
-                      <th className="py-3 px-4 text-left"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cartItems.map((item) => (
-                      <tr
-                        key={item.title}
-                        className="border-b border-lime-500/10 hover:bg-neutral-900/50 transition-colors duration-300"
-                      >
-                        <td className="py-4 px-4">
-                          <img
-                            src={item.thumb || "https://via.placeholder.com/64"}
-                            alt={t("game_image")}
-                            loading="lazy"
-                            className="w-16 h-16 object-contain rounded-sm border border-lime-500/20"
-                          />
-                        </td>
-                        <td className="py-4 px-4 text-sm text-lime-400 line-clamp-2">
-                          {item.title || t("unknown_game")}
-                        </td>
-                        <td className="py-4 px-4">
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            min="1"
-                            onChange={(e) =>
-                              updateQuantity(
-                                item.title,
-                                parseInt(e.target.value) || 1
-                              )
-                            }
-                            className="w-16 p-1 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-center rounded-sm focus:outline-none focus:border-lime-500 transition-colors duration-300"
-                          />
-                        </td>
-                        <td className="py-4 px-4 text-sm text-green-400">
-                          ${item.salePrice}
-                        </td>
-                        <td className="py-4 px-4 text-sm text-green-400">
-                          ${(Number(item.salePrice) * item.quantity).toFixed(2)}
-                        </td>
-                        <td className="py-4 px-4">
-                          <button
-                            onClick={() => removeFromCart(item.title)}
-                            className="bg-neutral-900/50 border border-lime-500/50 text-lime-400 p-2 rounded-sm
-                              hover:bg-red-500/20 hover:border-red-500/50 transition-all duration-300 transform hover:scale-110"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="text-right p-4 text-xl md:text-2xl font-bold text-green-400 border-t border-lime-500/20">
-                {t("cart_total")}: ${calculateTotal()}
-              </div>
-            </div>
-            <div className="mt-6 text-right">
-              <Link
-                to="/checkout"
-                className="inline-block bg-lime-500/10 border border-lime-500 text-lime-400 font-semibold py-3 px-6 rounded-md
-                  hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105"
+        <div className="space-y-4">
+          {cartItems.map((item) => {
+            // Декодуємо gameID, якщо він містить % (наприклад, %3D → =)
+            const decodedGameID = item.gameID.includes('%')
+              ? decodeURIComponent(item.gameID)
+              : item.gameID;
+
+            return (
+              <div
+                key={item.gameID}
+                className="flex justify-between items-center bg-neutral-950/50 border border-lime-500/20 rounded-sm p-4"
               >
-                {t("proceed_to_checkout")}
-              </Link>
-            </div>
-          </>
-        )}
+                <div className="flex items-center gap-4">
+                  <img
+                    src={item.thumb}
+                    alt={item.title}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                  <div>
+                    <Link
+                      to={`/game/${decodedGameID}`}
+                      className="text-lime-300 hover:underline"
+                    >
+                      {item.title}
+                    </Link>
+                    <p className="text-sm text-neutral-500 mt-1">
+                      {t("cart_quantity")}: {item.quantity}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-green-400 font-bold">
+                    ${parseFloat(item.salePrice).toFixed(2)}
+                  </span>
+                  <button
+                    onClick={() => removeFromCart(item.gameID)}
+                    className="text-red-500 hover:text-red-400 transition"
+                    title={t("remove_from_cart")}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="border-t border-lime-500/20 mt-6 pt-4 flex justify-between">
+          <span className="text-lime-400">{t("cart_total")}:</span>
+          <span className="text-green-400 font-bold text-xl">${total}</span>
+        </div>
+
+        <Link
+          to="/checkout"
+          className="block text-center mt-8 bg-lime-500/10 border border-lime-500 text-lime-400 font-semibold py-3 rounded-sm hover:bg-lime-500 hover:text-black transition-all"
+        >
+          {t("proceed_to_checkout")}
+        </Link>
       </div>
     </div>
   );

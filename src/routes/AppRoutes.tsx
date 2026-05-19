@@ -23,6 +23,8 @@ import SteamCallback from "../pages/SteamCallback";
 import ResetPassword from "../pages/ResetPassword";
 import Settings from "../pages/Settings";
 import FriendProfile from "../pages/FriendProfile";
+import Checkout from "../pages/Checkout";
+import OrderSuccess from "../pages/OrderSuccess";
 
 const AppRoutes = () => (
   <Routes>
@@ -47,6 +49,8 @@ const AppRoutes = () => (
     <Route path="/reset-password" element={<ResetPassword />} />
     <Route path="/settings" element={<Settings />} />
     <Route path="*" element={<NotFound />} />
+    <Route path="/checkout" element={<Checkout />} />
+    <Route path="/order-success" element={<OrderSuccess />} />
   </Routes>
 );
 

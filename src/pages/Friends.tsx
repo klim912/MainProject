@@ -55,7 +55,7 @@ function Friends() {
   };
 
   return (
-    <div className="mt-[200px] px-4 sm:px-6 lg:px-8 bg-black min-h-screen font-mono text-white">
+    <div className="mt-[193px] px-4 sm:px-6 lg:px-8 bg-black min-h-screen font-mono text-white">
       <div className="max-w-3xl mx-auto py-8">
         <h1 className="text-3xl font-bold text-lime-400 uppercase tracking-wider mb-6">{t("friends")}</h1>
 

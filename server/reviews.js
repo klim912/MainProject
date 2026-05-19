@@ -1,13 +1,8 @@
-// ЗМІНИ:
-// - Додано маршрути: GET /:reviewId/comments, POST /:reviewId/comments, DELETE /comments/:commentId
-// - Додано валідацію довжини тексту (review <=1000, comment <=500)
-// - Перевірка обов'язкових полів
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');
 const db = admin.firestore();
 
-// ---------- Рецензії ----------
 router.get('/:gameId', async (req, res) => {
   try {
     const snapshot = await db.collection('reviews')
@@ -99,7 +94,6 @@ router.delete('/:reviewId', async (req, res) => {
   }
 });
 
-// ---------- Коментарі до рецензій ----------
 router.get('/:reviewId/comments', async (req, res) => {
   try {
     const snapshot = await db.collection('reviewComments')
@@ -129,7 +123,6 @@ router.post('/:reviewId/comments', async (req, res) => {
     if (!userId || !userName || !text) return res.status(400).json({ error: 'Missing required fields' });
     if (text.length > 500) return res.status(400).json({ error: 'Comment too long (max 500 characters)' });
 
-    // перевіряємо, чи існує рецензія
     const reviewRef = db.collection('reviews').doc(reviewId);
     const reviewDoc = await reviewRef.get();
     if (!reviewDoc.exists) return res.status(404).json({ error: 'Review not found' });

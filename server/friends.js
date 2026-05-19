@@ -1,7 +1,3 @@
-// ЗМІНИ:
-// - Додано profile/:uid, messages/new, online
-// - unreadCount у GET /:uid за параметром ?lastChecked
-// - Порядок маршрутів: конкретні перед параметризованим
 const express = require('express');
 const router = express.Router();
 const admin = require('firebase-admin');

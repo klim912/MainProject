@@ -1,7 +1,7 @@
 // ЗМІНИ:
 // - Додано лічильник вхідних запитів друзів біля Friends (рядки ~11, ~25, ~217)
 import { useState, useEffect } from "react";
-import { Search, X, Menu, ChevronDown, ShoppingCart, Heart } from "react-feather";
+import { Search, X, Menu, ChevronDown, ShoppingCart, Heart, DollarSign } from "react-feather";
 import { NavLink, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useCart } from "./CartContext";
 import { useWishlist } from "./WishlistContext";
@@ -19,7 +19,7 @@ function Header() {
   const { userSettings } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { cartItems } = useCart();
+  const { cartItems, balance } = useCart();
   const { wishlist } = useWishlist();
   const { currentUser, userProfile, logout } = useAuth();
   const { incomingRequests } = useFriends();
@@ -227,6 +227,10 @@ function Header() {
           <ShoppingCart size={16} /> {t("cart")}
           {cartCount > 0 && <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">{cartCount}</span>}
         </NavLink>
+        <div className="flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide">
+          <DollarSign size={16} />
+          <span>{balance.toFixed(2)} $</span>
+        </div>
       </div>
     </header>
   );

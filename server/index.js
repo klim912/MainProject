@@ -1,6 +1,7 @@
 // ЗМІНИ:
-// - CORS ПЕРЕД rate limiter, ліміт збільшено до 2000
-// - Підключення роутерів після ініціалізації Firebase
+// - Переміщено require('./orders') після admin.initializeApp
+// - CORS перед rate limiter
+// - Підключено всі роутери
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
@@ -43,9 +44,11 @@ admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
+// Підключаємо роутери після ініціалізації Firebase
 const friendsRouter = require('./friends');
 const userDataRouter = require('./userData');
 const reviewsRouter = require('./reviews');
+const ordersRouter = require('./orders');
 
 app.use(session({
   secret: 'your_session_secret',
@@ -59,6 +62,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/friends', friendsRouter);
 app.use('/user', userDataRouter);
 app.use('/reviews', reviewsRouter);
+app.use('/orders', ordersRouter);
 
 const STEAM_API_KEY = 'F0577A7618F5812DF4FF0E4C0A92C2AE';
 
