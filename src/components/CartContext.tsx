@@ -1,6 +1,10 @@
+// ЗМІНИ:
+// - При появі currentUser баланс завантажується з сервера /user/balance/:uid
+// - При виході баланс скидається до 0
+// - Додано логін-перевірку при додаванні в кошик
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useLibrary, LibraryItem } from './LibraryContext';
+import { useLibrary } from './LibraryContext';
 import { useToast } from './ToastContext';
 import { useTranslation } from 'react-i18next';
 
@@ -40,29 +44,75 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
 
   const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    const savedCart = localStorage.getItem("cart");
-    return savedCart ? JSON.parse(savedCart) : [];
+    if (!currentUser) return [];
+    const saved = localStorage.getItem("cart");
+    return saved ? JSON.parse(saved) : [];
   });
 
-  const [balance, setBalance] = useState<number>(() => {
-    const savedBalance = localStorage.getItem("balance");
-    return savedBalance ? parseFloat(savedBalance) : 100;
-  });
+  const [balance, setBalance] = useState<number>(0);
 
+  // Завантаження балансу з сервера при вході
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cartItems));
-  }, [cartItems]);
-
-  useEffect(() => {
-    localStorage.setItem("balance", balance.toString());
-  }, [balance]);
-
-  const addToCart = (item: Omit<CartItem, "quantity">) => {
-    if (library.some((libItem: LibraryItem) => libItem.dealID === item.gameID)) {
-      toast(t('already_in_library'));
+    if (!currentUser) {
+      setBalance(0);
+      localStorage.removeItem("balance");
       return;
     }
 
+    async function loadBalance() {
+      try {
+        const res = await fetch(`http://localhost:3000/user/balance/${currentUser.uid}`);
+        if (res.ok) {
+          const data = await res.json();
+          setBalance(data.balance);
+          localStorage.setItem("balance", data.balance.toString());
+        } else {
+          // fallback
+          const saved = localStorage.getItem("balance");
+          if (saved) setBalance(parseFloat(saved));
+          else setBalance(100);
+        }
+      } catch {
+        const saved = localStorage.getItem("balance");
+        if (saved) setBalance(parseFloat(saved));
+        else setBalance(100);
+      }
+    }
+
+    loadBalance();
+  }, [currentUser]);
+
+  // Очищення при виході
+  useEffect(() => {
+    if (!currentUser) {
+      setCartItems([]);
+      setBalance(0);
+      localStorage.removeItem("cart");
+      localStorage.removeItem("balance");
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem("cart", JSON.stringify(cartItems));
+    }
+  }, [cartItems, currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem("balance", balance.toString());
+    }
+  }, [balance, currentUser]);
+
+  const addToCart = (item: Omit<CartItem, "quantity">) => {
+    if (!currentUser) {
+      toast(t("login_to_add_to_cart", "Увійдіть, щоб додавати в кошик"));
+      return;
+    }
+    if (library.some((libItem: any) => libItem.dealID === item.gameID)) {
+      toast(t('already_in_library'));
+      return;
+    }
     setCartItems((prevItems) => {
       if (!prevItems.find((i) => i.gameID === item.gameID)) {
         return [...prevItems, { ...item, quantity: 1 }];
@@ -102,6 +152,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setCartItems([]);
       setBalance(data.newBalance);
       localStorage.removeItem("cart");
+      localStorage.setItem("balance", data.newBalance.toString());
 
       return {
         success: true,

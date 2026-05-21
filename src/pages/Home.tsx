@@ -480,23 +480,39 @@ function Home() {
 
       {/* Кастомні стилі Swiper: зелені точки пагінації та зелені стрілки навігації */}
       <style>{`
-        /* Пагінація (точки) головного банера */
         .swiper-pagination-bullet {
-          background-color: #84cc16 !important; /* lime-500 */
+          background-color: #84cc16 !important;
           opacity: 0.5;
         }
         .swiper-pagination-bullet-active {
-          background-color: #a3e635 !important; /* lime-400 */
+          background-color: #a3e635 !important;
           opacity: 1;
         }
-        /* Стрілки навігації нижніх слайдерів */
         .swiper-button-prev,
         .swiper-button-next {
-          color: #a3e635 !important; /* lime-400 */
+          color: #a3e635 !important;
+          width: 40px;
+          height: 40px;
+          margin-top: -20px;
         }
         .swiper-button-prev:hover,
         .swiper-button-next:hover {
-          color: #bef264 !important; /* lime-300 */
+          color: #bef264 !important;
+        }
+        /* Виносимо стрілки назовні, щоб не перекривали картки */
+        .swiper-button-prev {
+          left: -40px !important;
+        }
+        .swiper-button-next {
+          right: -40px !important;
+        }
+        @media (max-width: 640px) {
+          .swiper-button-prev {
+            left: 0px !important;
+          }
+          .swiper-button-next {
+            right: 0px !important;
+          }
         }
       `}</style>
     </div>

@@ -1,7 +1,16 @@
 // ЗМІНИ:
-// - Додано лічильник вхідних запитів друзів біля Friends (рядки ~11, ~25, ~217)
+// - Вішліст, кошик і баланс показуються лише для авторизованих користувачів (рядки ~210-240)
+// - При виході очищаються localStorage для кошика, вішліста, бібліотеки
 import { useState, useEffect } from "react";
-import { Search, X, Menu, ChevronDown, ShoppingCart, Heart, DollarSign } from "react-feather";
+import {
+  Search,
+  X,
+  Menu,
+  ChevronDown,
+  ShoppingCart,
+  Heart,
+  DollarSign,
+} from "react-feather";
 import { NavLink, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useCart } from "./CartContext";
 import { useWishlist } from "./WishlistContext";
@@ -23,7 +32,7 @@ function Header() {
   const { wishlist } = useWishlist();
   const { currentUser, userProfile, logout } = useAuth();
   const { incomingRequests } = useFriends();
-  
+
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
   const wishlistCount = wishlist.length;
   const friendRequestCount = incomingRequests.length;
@@ -53,7 +62,6 @@ function Header() {
       }
       setSearchParams(newParams);
     }, 500);
-
     return () => clearTimeout(timeout);
   }, [inputValue, searchParams, setSearchParams]);
 
@@ -76,13 +84,15 @@ function Header() {
     }
   };
 
-  const handleCartClick = () => {
-    navigate("/cart");
-  };
-
   const handleLogout = async () => {
     try {
       await logout();
+      // Очищаємо локальні дані після виходу
+      localStorage.removeItem("cart");
+      localStorage.removeItem("wishlist");
+      localStorage.removeItem("library");
+      localStorage.removeItem("receipts");
+      localStorage.removeItem("balance");
       toggleMenu();
       navigate("/");
     } catch (_) {}
@@ -171,9 +181,7 @@ function Header() {
             value={inputValue}
             aria-label="Пошук ігор"
             onChange={handleSearchChange}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSearchSubmit();
-            }}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSearchSubmit(); }}
             className="w-full px-4 py-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm rounded-sm
               focus:outline-none focus:border-lime-500 placeholder-neutral-500 uppercase tracking-wide transition-all duration-300"
           />
@@ -184,23 +192,15 @@ function Header() {
         </div>
 
         <div className="hidden lg:flex items-center gap-8">
-          <NavLink to="/store" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
-            {t("store")}
-          </NavLink>
-          <NavLink to="/library" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
-            {t("library")}
-          </NavLink>
+          <NavLink to="/store" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">{t("store")}</NavLink>
+          <NavLink to="/library" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">{t("library")}</NavLink>
           <NavLink to="/friends" className="relative text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
             {t("friends")}
             {friendRequestCount > 0 && (
-              <span className="absolute -top-2 -right-4 bg-lime-500 text-black text-xs rounded-full px-2 py-0.5">
-                {friendRequestCount}
-              </span>
+              <span className="absolute -top-2 -right-4 bg-lime-500 text-black text-xs rounded-full px-2 py-0.5">{friendRequestCount}</span>
             )}
           </NavLink>
-          <NavLink to="/sales" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">
-            {t("sales")}
-          </NavLink>
+          <NavLink to="/sales" className="text-lime-400 text-sm uppercase tracking-wide hover:text-lime-500 transition-colors duration-300">{t("sales")}</NavLink>
         </div>
 
         <button className="lg:hidden text-lime-400" aria-label="Відкрити меню" onClick={toggleNav}>
@@ -218,20 +218,36 @@ function Header() {
         </div>
       )}
 
-      <div className="flex justify-end gap-4 px-6 py-3 border-t border-lime-500/20">
-        <NavLink to="/wishlist" className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105">
-          <Heart size={16} /> {t("wishlist")}
-          {wishlistCount > 0 && <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">{wishlistCount}</span>}
-        </NavLink>
-        <NavLink to="/cart" className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105">
-          <ShoppingCart size={16} /> {t("cart")}
-          {cartCount > 0 && <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">{cartCount}</span>}
-        </NavLink>
-        <div className="flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide">
-          <DollarSign size={16} />
-          <span>{balance.toFixed(2)} $</span>
+      {currentUser && (
+        <div className="flex justify-end gap-4 px-6 py-3 border-t border-lime-500/20">
+          <NavLink
+            to="/wishlist"
+            className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide
+              hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105"
+          >
+            <Heart size={16} />
+            {t("wishlist")}
+            {wishlistCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">{wishlistCount}</span>
+            )}
+          </NavLink>
+          <NavLink
+            to="/cart"
+            className="relative flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide
+              hover:bg-lime-500 hover:text-black transition-all duration-300 transform hover:scale-105"
+          >
+            <ShoppingCart size={16} />
+            {t("cart")}
+            {cartCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-lime-500 text-black text-xs rounded-full px-2 py-1">{cartCount}</span>
+            )}
+          </NavLink>
+          <div className="flex items-center gap-2 bg-neutral-900/50 border border-lime-500/50 text-lime-400 text-sm px-4 py-2 rounded-sm uppercase tracking-wide">
+            <DollarSign size={16} />
+            <span>{balance.toFixed(2)} $</span>
+          </div>
         </div>
-      </div>
+      )}
     </header>
   );
 }

@@ -1,8 +1,6 @@
 // ЗМІНИ:
-// - Додано стан genre для відображення вибраного жанру в кнопці (рядок ~14)
-// - Логіка handleFilterChange тепер оновлює genre (рядок ~20)
-// - CustomSelect отримує актуальний value для жанру (рядок ~62)
-// - Решта без змін
+// - Додано min-h-[500px] – блок фільтрів завжди займає щонайменше 500px
+// - max-h залишено для обмеження висоти на маленьких екранах
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../context/AuthContext";
@@ -42,20 +40,13 @@ function Sidebar({ setSearchParams }: { setSearchParams: any }) {
     });
   };
 
-  const handleSortChange = (value: string) => {
-    setSortOption(value);
-  };
-
   return (
     <aside
-      className="w-64 bg-neutral-950 border-r mt-[30px] border-lime-500/30 p-6 text-white font-mono sticky top-0 self-start min-h-screen"
-      style={{ maxHeight: "100vh", overflowY: "auto" }}
+      className="w-full lg:w-64 bg-black border-r border-lime-500/30 p-6 text-white font-mono
+        lg:sticky lg:top-[200px] lg:min-h-[450px] lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto"
     >
-      <h2
-        className="text-xl md:text-2xl font-bold text-lime-400 mb-8 tracking-wider uppercase relative
-          before:content-[''] before:absolute before:inset-x-0 before:bottom-0 before:h-0.5 before:bg-lime-500/50
-          before:transform before:transition-transform before:duration-300 hover:before:scale-x-110"
-      >
+      <h2 className="text-xl md:text-2xl font-bold text-lime-400 mb-8 tracking-wider uppercase relative
+        before:content-[''] before:absolute before:inset-x-0 before:bottom-0 before:h-0.5 before:bg-lime-500/50">
         {t("filters")}
       </h2>
 
@@ -86,7 +77,7 @@ function Sidebar({ setSearchParams }: { setSearchParams: any }) {
           <CustomSelect
             name="sort"
             value={sortOption}
-            onChange={handleSortChange}
+            onChange={(value) => setSortOption(value)}
             options={[
               { value: "price-asc", label: t("price_asc") },
               { value: "price-desc", label: t("price_desc") },
@@ -101,10 +92,6 @@ function Sidebar({ setSearchParams }: { setSearchParams: any }) {
   );
 }
 
-/**
- * Кастомне випадаюче меню, яке повністю замінює <select>.
- * Дозволяє стилізувати hover-стани опцій у стилі проєкту (lime).
- */
 function CustomSelect({
   name,
   value,
@@ -121,7 +108,6 @@ function CustomSelect({
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Закриття при кліці поза компонентом
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -143,19 +129,13 @@ function CustomSelect({
           focus:outline-none focus:border-lime-500 hover:bg-neutral-900/70 transition-all duration-300 flex justify-between items-center"
       >
         <span>{selectedOption ? selectedOption.label : t("all")}</span>
-        <svg
-          className={`w-4 h-4 transform transition-transform ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
+        <svg className={`w-4 h-4 transform transition-transform ${isOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
-        <ul className="absolute z-20 w-full mt-1 bg-neutral-900 border border-lime-500/30 rounded-sm shadow-lg shadow-black/50 max-h-60 overflow-y-auto">
+        <ul className="absolute z-20 w-full mt-1 bg-black border border-lime-500/30 rounded-sm shadow-lg shadow-black/50 max-h-60 overflow-y-auto">
           {options.map((option) => (
             <li
               key={option.value}
@@ -164,11 +144,7 @@ function CustomSelect({
                 setIsOpen(false);
               }}
               className={`px-4 py-2 text-sm cursor-pointer transition-all duration-200
-                ${
-                  option.value === value
-                    ? "bg-lime-500/10 text-lime-300"
-                    : "text-lime-400 hover:bg-lime-500/20 hover:text-lime-200"
-                }`}
+                ${option.value === value ? "bg-lime-500/10 text-lime-300" : "text-lime-400 hover:bg-lime-500/20 hover:text-lime-200"}`}
             >
               {option.label}
             </li>

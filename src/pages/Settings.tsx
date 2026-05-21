@@ -4,7 +4,19 @@ import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 
 function Settings() {
-  const { currentUser, userProfile, userSettings, updateUserName, updateUserEmail, updateUserPassword, enable2FA, disable2FA, setLanguage, deleteAccount } = useAuth();
+  const {
+    currentUser,
+    userProfile,
+    userSettings,
+    updateUserName,
+    updateUserEmail,
+    updateUserPassword,
+    enable2FA,
+    disable2FA,
+    verify2FA,
+    setLanguage,
+    deleteAccount,
+  } = useAuth();
   const { t, i18n } = useTranslation();
   const [name, setName] = useState(userProfile?.displayName || "");
   const [email, setEmail] = useState(userProfile?.email || "");
@@ -17,6 +29,12 @@ function Settings() {
   const [success, setSuccess] = useState("");
   const [qrCodeUrl, setQrCodeUrl] = useState("");
   const [showQRModal, setShowQRModal] = useState(false);
+
+  // 2FA модальне вікно (лише для дій, що потребують підтвердження)
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [pendingAction, setPendingAction] = useState<() => Promise<void>>(() => Promise.resolve());
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,6 +43,53 @@ function Settings() {
     }
     i18n.changeLanguage(language);
   }, [currentUser, navigate, language, i18n]);
+
+  const getFirebaseErrorMessage = (error: any): string => {
+    const code = error?.code;
+    if (code === "auth/invalid-credential" || code === "auth/wrong-password") {
+      return t("error_wrong_password", "Невірний пароль");
+    }
+    if (code === "auth/too-many-requests") {
+      return t("error_too_many_requests", "Забагато спроб. Спробуйте пізніше");
+    }
+    if (code === "auth/requires-recent-login") {
+      return t("error_requires_recent_login", "Потрібно повторно увійти");
+    }
+    if (code === "auth/email-already-in-use") {
+      return t("error_email_in_use", "Цей email вже використовується");
+    }
+    if (code === "auth/invalid-email") {
+      return t("error_invalid_email", "Некоректний email");
+    }
+    if (code === "auth/weak-password") {
+      return t("error_password_short", "Пароль має бути не менше 8 символів");
+    }
+    return t("error_unknown", "Сталася помилка");
+  };
+
+  // Виконує дію з перевіркою 2FA, якщо потрібно
+  const executeWith2FA = (action: () => Promise<void>) => {
+    if (userSettings?.twoFactorEnabled) {
+      setPendingAction(() => action);
+      setShow2FAModal(true);
+      setTwoFactorCode("");
+    } else {
+      action().catch((err: any) => setError(err.code ? getFirebaseErrorMessage(err) : err.message));
+    }
+  };
+
+  const handleVerify2FAForAction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    try {
+      await verify2FA(twoFactorCode.trim());
+      setShow2FAModal(false);
+      setTwoFactorCode("");
+      await pendingAction();
+    } catch (err: any) {
+      setError(err.message || t("error_tfa_invalid"));
+    }
+  };
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,31 +108,27 @@ function Settings() {
     e.preventDefault();
     setError("");
     setSuccess("");
-    try {
-      if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) throw new Error(t("error_email_invalid"));
-      if (!password) throw new Error(t("error_password_empty"));
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) return setError(t("error_email_invalid"));
+    if (!password) return setError(t("error_password_empty"));
+    executeWith2FA(async () => {
       await updateUserEmail(email, password);
       setSuccess(t("success_email_updated"));
       setPassword("");
-    } catch (err: any) {
-      setError(err.message);
-    }
+    });
   };
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setSuccess("");
-    try {
-      if (newPassword.length < 8) throw new Error(t("error_password_short"));
-      if (!oldPassword) throw new Error(t("error_password_empty"));
+    if (newPassword.length < 8) return setError(t("error_password_short"));
+    if (!oldPassword) return setError(t("error_password_empty"));
+    executeWith2FA(async () => {
       await updateUserPassword(newPassword, oldPassword);
       setSuccess(t("success_password_updated"));
       setNewPassword("");
       setOldPassword("");
-    } catch (err: any) {
-      setError(err.message);
-    }
+    });
   };
 
   const handleEnable2FA = async () => {
@@ -78,22 +139,20 @@ function Settings() {
       setQrCodeUrl(qrCodeUrl);
       setShowQRModal(true);
       setSuccess(t("success_tfa_enabled"));
-    } catch (_err: unknown) {
-      setError(t("error_tfa_failed"));
+    } catch (err: any) {
+      setError(err.message || t("error_tfa_failed"));
     }
   };
 
   const handleDisable2FA = async () => {
     setError("");
     setSuccess("");
-    try {
+    executeWith2FA(async () => {
       await disable2FA();
       setQrCodeUrl("");
       setShowQRModal(false);
       setSuccess(t("success_tfa_disabled"));
-    } catch (err: any) {
-      setError(err.message);
-    }
+    });
   };
 
   const handleSetLanguage = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -112,15 +171,14 @@ function Settings() {
 
   const handleDeleteAccount = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!window.confirm(t("confirm_delete_account"))) return;
     setError("");
     setSuccess("");
-    try {
-      if (!deletePassword) throw new Error(t("error_delete_account_password"));
+    if (!deletePassword) return setError(t("error_delete_account_password"));
+    executeWith2FA(async () => {
       await deleteAccount(deletePassword);
       navigate("/login");
-    } catch (err: any) {
-      setError(err.message);
-    }
+    });
   };
 
   if (!currentUser || !userProfile) return null;
@@ -145,6 +203,7 @@ function Settings() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Профіль */}
           <div className="bg-neutral-950/90 border border-lime-500/30 rounded-lg p-6 shadow-[0_0_15px_rgba(190,242,100,0.3)]">
             <h3 className="text-2xl font-bold text-lime-400 mb-4 uppercase">{t("profile")}</h3>
             <form onSubmit={handleUpdateName} className="space-y-4">
@@ -195,6 +254,7 @@ function Settings() {
             )}
           </div>
 
+          {/* Безпека */}
           {!isSteamUser && (
             <div className="bg-neutral-950/90 border border-lime-500/30 rounded-lg p-6 shadow-[0_0_15px_rgba(190,242,100,0.3)]">
               <h3 className="text-2xl font-bold text-lime-400 mb-4 uppercase">{t("security")}</h3>
@@ -252,6 +312,7 @@ function Settings() {
             </div>
           )}
 
+          {/* Мова */}
           <div className="bg-neutral-950/90 border border-lime-500/30 rounded-lg p-6 shadow-[0_0_15px_rgba(190,242,100,0.3)]">
             <h3 className="text-2xl font-bold text-lime-400 mb-4 uppercase">{t("language")}</h3>
             <select
@@ -265,6 +326,7 @@ function Settings() {
             </select>
           </div>
 
+          {/* Видалення акаунта */}
           {!isSteamUser && (
             <div className="bg-neutral-950/90 border border-lime-500/30 rounded-lg p-6 shadow-[0_0_15px_rgba(190,242,100,0.3)]">
               <h3 className="text-2xl font-bold text-lime-400 mb-4 uppercase">{t("delete_account")}</h3>
@@ -301,6 +363,39 @@ function Settings() {
               >
                 {t("close")}
               </button>
+            </div>
+          </div>
+        )}
+
+        {show2FAModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-neutral-950 p-6 rounded-lg border border-lime-500/30">
+              <h3 className="text-xl text-lime-400 mb-4">{t("two_factor_auth")}</h3>
+              <form onSubmit={handleVerify2FAForAction} className="space-y-4">
+                <input
+                  type="text"
+                  value={twoFactorCode}
+                  onChange={(e) => setTwoFactorCode(e.target.value)}
+                  placeholder="000000"
+                  className="w-full bg-neutral-900 border border-lime-500/50 text-lime-400 p-2 rounded-sm"
+                  maxLength={6}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-lime-500/10 border border-lime-500 text-lime-400 py-2 rounded-sm hover:bg-lime-500 hover:text-black transition"
+                  >
+                    {t("verify_tfa")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShow2FAModal(false); setTwoFactorCode(""); }}
+                    className="px-4 py-2 bg-neutral-800 text-lime-400 rounded-sm"
+                  >
+                    {t("cancel")}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

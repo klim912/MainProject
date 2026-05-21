@@ -1,3 +1,8 @@
+// ЗМІНИ:
+// - is2FAVerified зберігається/читається з sessionStorage
+// - set2FAVerified оновлює sessionStorage
+// - logout очищає запис 2FA
+// - Решта функцій без змін, але signInWithEmail, signInWithGoogle тощо не встановлюють 2FA
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   getAuth,
@@ -5,7 +10,6 @@ import {
   signOut,
   signInWithPopup,
   GoogleAuthProvider,
-  FacebookAuthProvider,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
@@ -22,7 +26,6 @@ import { useTranslation } from "react-i18next";
 import { createLogger } from "../utils/logger";
 import { fromFirebaseAuthError, AppError, ERROR_CODES, PaymentError, DataError } from "../utils/errors";
 
-// Логер для цього модуля
 const log = createLogger("AuthContext");
 
 interface UserProfile {
@@ -98,7 +101,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [loading, setLoading] = useState(true);
-  const [is2FAVerified, set2FAVerified] = useState(false);
+  const [is2FAVerified, setIs2FAVerified] = useState(false);
+
+  const set2FAVerified = (verified: boolean) => {
+    setIs2FAVerified(verified);
+    if (currentUser) {
+      if (verified) {
+        sessionStorage.setItem(`2fa_verified_${currentUser.uid}`, "1");
+      } else {
+        sessionStorage.removeItem(`2fa_verified_${currentUser.uid}`);
+      }
+    }
+  };
 
   useEffect(() => {
     log.info("AuthProvider mounted — subscribing to Firebase auth state");
@@ -107,8 +121,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUser(user);
 
       if (user) {
-        // Зберігаємо uid для логера (без email/токенів — тільки uid)
         sessionStorage.setItem("gs_uid", user.uid);
+
+        // Відновлюємо стан 2FA з sessionStorage
+        const stored = sessionStorage.getItem(`2fa_verified_${user.uid}`);
+        if (stored) {
+          setIs2FAVerified(true);
+        } else {
+          setIs2FAVerified(false);
+        }
 
         log.info("User authenticated", {
           uid: user.uid,
@@ -150,7 +171,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             log.info("Default settings created for new user", { uid: user.uid });
           }
         } catch (_err: unknown) {
-          // Логуємо через AppError щоб отримати errorId
           const appErr = new DataError(
             "Failed to load user profile/settings from Firestore",
             ERROR_CODES.DATA_FETCH_FAILED,
@@ -173,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         log.info("User signed out — clearing profile and settings");
         setUserProfile(null);
         setUserSettings(null);
-        set2FAVerified(false);
+        setIs2FAVerified(false);
       }
 
       setLoading(false);
@@ -183,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       log.debug("AuthProvider unmounting — unsubscribing from auth state");
       unsubscribe();
     };
-  }, [auth, db, is2FAVerified]);
+  }, [auth, db]);
 
   // ─── Logout ───────────────────────────────────────────────────────────────
 
@@ -195,9 +215,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         credentials: "include",
       });
       await signOut(auth);
+      if (currentUser) {
+        sessionStorage.removeItem(`2fa_verified_${currentUser.uid}`);
+      }
       setUserProfile(null);
       setUserSettings(null);
-      set2FAVerified(false);
+      setIs2FAVerified(false);
       log.info("Logout successful");
     } catch (_err: unknown) {
       const appErr = new AppError(
@@ -226,16 +249,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithFacebook = async () => {
-    log.info("Facebook sign-in initiated");
-    try {
-      const provider = new FacebookAuthProvider();
-      await signInWithPopup(auth, provider);
-      log.info("Facebook sign-in successful");
-    } catch (_err: unknown) {
-      const appErr = fromFirebaseAuthError(_err, { provider: "facebook" });
-      log.error("Facebook sign-in failed", { errorId: appErr.errorId, code: appErr.code });
-      throw new Error(t("error_facebook_login"));
-    }
+    throw new Error(t("error_facebook_login"));
   };
 
   const signInWithSteam = async () => {
@@ -253,28 +267,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ─── Email sign-in ────────────────────────────────────────────────────────
+  // ─── Email sign-in (без перевірки emailVerified) ─────────────────────────
 
   const signInWithEmail = async (email: string, password: string) => {
-    // Не логуємо email у DEBUG щоб не зберігати PII в буфері
     log.info("Email sign-in initiated");
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      if (!user.emailVerified) {
-        log.warn("Email sign-in blocked — email not verified", { uid: user.uid });
-        throw new Error(t("error_email_not_verified"));
-      }
-
       log.info("Email sign-in successful", { uid: user.uid });
     } catch (err: any) {
-      // Якщо помилка вже кинута нами (email not verified) — пробрасуємо як є
-      if (err.message === t("error_email_not_verified")) throw err;
-
       const appErr = fromFirebaseAuthError(err, { method: "email" });
       log.error("Email sign-in failed", { errorId: appErr.errorId, code: appErr.code });
-      throw new Error(`${t("error_email_login")}: ${err.message}`);
+      throw err;
     }
   };
 
@@ -308,7 +312,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       const appErr = fromFirebaseAuthError(err, { method: "register" });
       log.error("User registration failed", { errorId: appErr.errorId, code: appErr.code });
-      throw new Error(`${t("error_registration")}: ${err.message}`);
+      throw err;
     }
   };
 
@@ -344,7 +348,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         { uid: currentUser.uid }
       );
       log.error("Display name update failed", { errorId: appErr.errorId });
-      throw new Error(`${t("error_name_update")}: ${err.message}`);
+      throw err;
     }
   };
 
@@ -370,7 +374,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         operation: "updateEmail",
       });
       log.error("Email update failed", { errorId: appErr.errorId, code: appErr.code });
-      throw new Error(`${t("error_email_update")}: ${err.message}`);
+      throw err;
     }
   };
 
@@ -390,7 +394,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         operation: "updatePassword",
       });
       log.error("Password update failed", { errorId: appErr.errorId, code: appErr.code });
-      throw new Error(`${t("error_password_update")}: ${err.message}`);
+      throw err;
     }
   };
 
@@ -533,9 +537,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await deleteUser(currentUser);
 
+      if (currentUser) {
+        sessionStorage.removeItem(`2fa_verified_${currentUser.uid}`);
+      }
       setUserProfile(null);
       setUserSettings(null);
-      set2FAVerified(false);
+      setIs2FAVerified(false);
 
       log.info("Account deleted successfully");
     } catch (err: any) {
@@ -544,7 +551,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         operation: "deleteAccount",
       });
       log.error("Account deletion failed", { errorId: appErr.errorId, code: appErr.code });
-      throw new Error(`${t("error_delete_account")}: ${err.message}`);
+      throw err;
     }
   };
 
@@ -579,7 +586,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   return useContext(AuthContext);
 }

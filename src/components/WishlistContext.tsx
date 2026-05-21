@@ -1,6 +1,9 @@
+// ЗМІНИ:
+// - Очищення вішліста при виході
+// - Перевірка авторизації при додаванні (toast)
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useLibrary, LibraryItem } from './LibraryContext';
+import { useLibrary } from './LibraryContext';
 import { useToast } from './ToastContext';
 import { useTranslation } from 'react-i18next';
 
@@ -29,19 +32,29 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const [wishlist, setWishlist] = useState<Game[]>([]);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setWishlist([]);
+      localStorage.removeItem("wishlist");
+      return;
+    }
     fetch(`http://localhost:3000/user/wishlist/${currentUser.uid}`)
       .then(res => res.json())
       .then(data => { if (Array.isArray(data)) setWishlist(data); })
-      .catch(() => {});
+      .catch(console.error);
   }, [currentUser]);
 
   useEffect(() => {
-    localStorage.setItem("wishlist", JSON.stringify(wishlist));
-  }, [wishlist]);
+    if (currentUser) {
+      localStorage.setItem("wishlist", JSON.stringify(wishlist));
+    }
+  }, [wishlist, currentUser]);
 
   const addToWishlist = async (game: Game) => {
-    if (library.some((libItem: LibraryItem) => libItem.dealID === game.dealID)) {
+    if (!currentUser) {
+      toast(t("login_to_add_to_wishlist", "Увійдіть, щоб додавати в обране"));
+      return;
+    }
+    if (library.some((libItem: any) => libItem.dealID === game.dealID)) {
       toast(t('already_in_library'));
       return;
     }

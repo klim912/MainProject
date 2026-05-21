@@ -64,6 +64,16 @@ app.use('/user', userDataRouter);
 app.use('/reviews', reviewsRouter);
 app.use('/orders', ordersRouter);
 
+// Форма зворотного зв'язку
+app.post('/feedback', (req, res) => {
+  const { name, message } = req.body;
+  if (!name || !message) {
+    return res.status(400).json({ error: 'Missing fields' });
+  }
+  console.log(`Feedback from ${name}: ${message}`);
+  res.status(200).json({ success: true });
+});
+
 const STEAM_API_KEY = 'F0577A7618F5812DF4FF0E4C0A92C2AE';
 
 passport.use(new SteamStrategy({
